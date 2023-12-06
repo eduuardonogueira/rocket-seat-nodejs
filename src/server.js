@@ -6,35 +6,54 @@ import http from "node:http"
 // PUT => Atualizar um recurso no back-end
 // PATCH => Atualizar uma informação específica de um recurso no back-end
 // DELETE => Deletar um recurso do back-end
- 
+
 // Stateful - Stateless
 
 // JSON - Javascript Object Notation
 
 // Cabeçalhos (Requisição/Resposta) => Metadados
 
-const users = [ ]
+// HTTP Status Code
 
-const server = http.createServer((req, res) => {
-    const { method, url } = req
+const users = []
 
-    if (method == 'GET' && url == '/users') {
-        return res
-        .setHeader('Content-type', 'application/JSON')
-        .end(JSON.stringify(users))
-    }
+const server = http.createServer(async (req, res) => {
+  const { method, url } = req
 
-    if (method == 'POST' && url == '/users') {
-        users.push({
-            id: 1,
-            name: 'John Doe',
-            email: 'johndoe@example.com'
-        })
-        
-        return res.end("Criação de usuários")
-    }
+  const buffers = []
 
-    return res.end("Hello World")
+  for await (const chunk of req) {
+    buffers.push(chunk)
+  }
+
+  try {
+    req.body = JSON.parse(Buffer.concat(buffers).toString())
+  } catch {
+    req.body = null
+  }
+
+  console.log(req.body)
+
+  if (method == 'GET' && url == '/users') {
+    return res
+    .setHeader('Content-type', 'application/JSON')
+    .end(JSON.stringify(users))
+  }
+
+  if (method == 'POST' && url == '/users') {
+    const { name, email } = req.body
+
+
+    users.push({
+      id: 1,
+      name,
+      email
+    })
+    
+    return res.writeHead(201).end()
+  }
+
+  return res.writeHead(404).end()
 })
 
 server.listen(3333)
