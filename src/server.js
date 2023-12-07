@@ -1,4 +1,7 @@
 import http from "node:http"
+import { json } from "./middleware/json.js"
+import { Database } from "./database.js"
+import { routes } from "./routes.js"
 
 // METHODS HTTP:
 // GET => Buscar um recurso do back-end
@@ -15,43 +18,26 @@ import http from "node:http"
 
 // HTTP Status Code
 
-const users = []
+
+// Query Paramenters => http://localhost:3333/users?userID=1&name=Diego | usados para filtros, paginação, não-obrigátorias
+// Route Paramenters => http://localhost:3333/users/1 | Identificação de recurso
+// Request Body => | Envio de informações de um formulário
+
 
 const server = http.createServer(async (req, res) => {
   const { method, url } = req
 
-  const buffers = []
+  await json(req, res)
 
-  for await (const chunk of req) {
-    buffers.push(chunk)
+
+  const route = routes.find(route => (
+    route.method == method && route.path == url
+  ))
+
+  if (route) {
+    return route.handler(req, res)
   }
 
-  try {
-    req.body = JSON.parse(Buffer.concat(buffers).toString())
-  } catch {
-    req.body = null
-  }
-
-  console.log(req.body)
-
-  if (method == 'GET' && url == '/users') {
-    return res
-    .setHeader('Content-type', 'application/JSON')
-    .end(JSON.stringify(users))
-  }
-
-  if (method == 'POST' && url == '/users') {
-    const { name, email } = req.body
-
-
-    users.push({
-      id: 1,
-      name,
-      email
-    })
-    
-    return res.writeHead(201).end()
-  }
 
   return res.writeHead(404).end()
 })
