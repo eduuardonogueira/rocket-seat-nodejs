@@ -2,6 +2,7 @@ import http from "node:http"
 import { json } from "./middleware/json.js"
 import { Database } from "./database.js"
 import { routes } from "./routes.js"
+import { extractQueryParams } from "./untils/extract-query-params.js"
 
 // METHODS HTTP:
 // GET => Buscar um recurso do back-end
@@ -31,10 +32,20 @@ const server = http.createServer(async (req, res) => {
 
 
   const route = routes.find(route => (
-    route.method == method && route.path == url
+    route.method === method && route.path.test(url)
   ))
 
   if (route) {
+    const routeParams = req.url.match(route.path)
+
+    const { query, ...params } = routeParams.groups
+
+    
+
+    req.params = params
+    req.query = query ? extractQueryParams(query) : {}
+
+
     return route.handler(req, res)
   }
 
